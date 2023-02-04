@@ -31,7 +31,7 @@ This plugin can be used to check the following services on Nokia ISAMs:
 
   Current RX/TX utilization of all PON interfaces (CLI: show pon utilization current-interval)
   
-  Warning and Critical thresholds can be set globally for all PON interfaces. Recommended values are 80% as warning and 85% as critical threshold. This can help you to identify high usage on PONs and plan your move to XGS-PON or reduce your splitting ratio.
+  Warning and Critical thresholds can be set globally for all PON interfaces. Recommended values are 80% as warning and 85% as critical threshold. This can help you identify high usage on PONs and plan your move to XGS-PON or reduce your splitting ratio.
 
 
 - board_temperature
