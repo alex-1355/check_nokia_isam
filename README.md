@@ -38,7 +38,7 @@ This plugin can be used to check the following services on Nokia ISAMs:
 ### Dependencies
 
 
-- Python 3
+- Python 3 (easysnmp installed via pip)
 - OMD, Check_MK or other Monitoring solutions
 - SNMP-enabled OSWP-image installed on the Mgmt-Card (FANT-F)
 - SNMPv2 enabled on your Nokia ISAM
