@@ -23,16 +23,22 @@ This plugin can be used to check the following services on Nokia ISAMs:
 - auto_backup_status
 
   Status of the auto-backup feature (CLI: show software-mngt upload-download)
+  
+  DB-Download and DB-Upload progress and error status is checked. DB-Download representing the status of the download from the ISAM to the local backup location and DB-Upload representing the status of the upload to the remote fileserver location previously configured via CLI.
 
 
 - pon_utilization
 
   Current RX/TX utilization of all PON interfaces (CLI: show pon utilization current-interval)
+  
+  Warning and Critical thresholds can be set globally for all PON interfaces. Recommended values are 80% as warning and 85% as critical threshold. This can help you to identify high usage on PONs and plan your move to XGS-PON or reduce your splitting ratio.
 
 
 - board_temperature
 
   Temperature Sensors of all boards (CLI: show equipment temperature)
+  
+  Warning and Critical thresholds are automatically set to the tca-low and shut-low threshold for each sensor. "tca-low" is the threshold of the boards sensor when the "Temperature exceeded" alarm is raised and "shut-low" is the threshold when the "Temperature shutdown" alarm is raised. Crossing the "shut-high" threshold (which is typically ~5°C higher than "shut-low") puts the board into temperature-shutdown, impacting customer services.
 
 
 ### Dependencies
