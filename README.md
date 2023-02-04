@@ -38,7 +38,7 @@ This plugin can be used to check the following services on Nokia ISAMs:
 
   Temperature Sensors of all boards (CLI: show equipment temperature)
   
-  Warning and Critical thresholds are automatically set to the tca-low and shut-low threshold for each sensor. "tca-low" is the threshold of the boards sensor when the "Temperature exceeded" alarm is raised and "shut-low" is the threshold when the "Temperature shutdown" alarm is raised. Crossing the "shut-high" threshold (which is typically ~5°C higher than "shut-low") puts the board into temperature-shutdown, impacting customer services.
+  Warning and Critical thresholds are automatically set to the tca-low and shut-low threshold of each sensor. "tca-low" is the threshold of the boards sensor when the "Temperature exceeded" alarm is raised and "shut-low" is the threshold when the "Temperature shutdown" alarm is raised. Crossing the "shut-high" threshold (which is typically ~5°C higher than "shut-low") puts the board into temperature-shutdown, impacting customer services.
 
 
 ### Dependencies
@@ -46,7 +46,7 @@ This plugin can be used to check the following services on Nokia ISAMs:
 
 - Python 3 (easysnmp installed via pip)
 - OMD, Check_MK or other Monitoring solutions
-- SNMP-enabled OSWP-image installed on the Mgmt-Card (FANT-F)
+- SNMP-enabled OSWP-image installed on the Mgmt-Board (FANT-F)
 - SNMPv2 enabled on your Nokia ISAM
 
   (configure system security snmp community MY-SNMP-COMM host-address MY-MGMT-NET/24)
