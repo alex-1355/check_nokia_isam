@@ -8,6 +8,11 @@
 # Version 1.1 - Alex Lindner/02.02.2023
 # check_isam_auto_backup_status
 # check_isam_pon_utilization
+# check_isam_board_temperature
+###
+# Version 1.2 - Alex Lindner/07.02.2023
+# check_isam_board_temperature
+#  - added range to warning/critical perf-data
 ###
 # Nagios Exit-Codes:
 # 0 = OK
@@ -298,7 +303,7 @@ def check_isam_board_temperature(hostname,community,slot_mapping,verbose):
         print(" |")
         i = len(snmp_actual_temp)-1
         while(i >= 0):
-            print("%s.%i=%i°C;%i;%i;;" % (slot_mapping[int(snmp_actual_temp[i].oid.rsplit('.',2)[-2])],int(snmp_actual_temp[i].oid.rsplit('.',1)[-1]),int(snmp_actual_temp[i].value),int(snmp_tca_lo[i].value),int(snmp_shut_lo[i].value)))
+            print("%s.%i=%i°C;%i:%i;%i:%i;;" % (slot_mapping[int(snmp_actual_temp[i].oid.rsplit('.',2)[-2])],int(snmp_actual_temp[i].oid.rsplit('.',1)[-1]),int(snmp_actual_temp[i].value),cold_warning,int(snmp_tca_lo[i].value),cold_critical,int(snmp_shut_lo[i].value)))
             i -= 1
 
         if code_critical: sys.exit(2)
@@ -325,7 +330,7 @@ def main():
 
 
 #   create parser
-    parser = OptionParser(usage=usage,version="%prog 1.1")
+    parser = OptionParser(usage=usage,version="%prog 1.2")
 
 #   add options to parser
     parser.add_option("--board_availability",
