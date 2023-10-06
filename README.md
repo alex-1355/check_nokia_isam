@@ -41,6 +41,12 @@ This plugin can be used to check the following services on Nokia ISAMs:
   Warning and Critical thresholds are automatically set to the tca-low and shut-low threshold of each sensor. "tca-low" is the threshold of the boards sensor when the "Temperature exceeded" alarm is raised and "shut-low" is the threshold when the "Temperature shutdown" alarm is raised. Crossing the "shut-high" threshold (which is typically ~5°C higher than "shut-low") puts the board into temperature-shutdown, impacting customer services.
 
 
+- nt_redundancy
+
+  NT-Redundancy Status of a Protection Group (CLI: show equipment protection-group, show equipment protection-element)
+  
+  The admin-state, group-state, standby-state of NT-A and NT-B and the last reason for switchover are checked.
+
 ### Dependencies
 
 
@@ -78,6 +84,7 @@ Usage:
  check_isam.py --auto_backup_status -s <host> -c <community> -v [verbose]
  check_isam.py --pon_utilization    -s <host> -c <community> -W <warning (1-99)> -C <critical (2-100)> -v [verbose]
  check_isam.py --board_temperature  -s <host> -c <community> -v [verbose]
+ check_isam.py --nt_redundancy      -s <host> -c <community> -g <groupId (1-5)> -v [verbose]
 
 Options:
   --version             show program's version number and exit
@@ -85,13 +92,16 @@ Options:
   --board_availability  checks the availability status of all boards
   --board_oper_status   checks the operational status of all boards
   --auto_backup_status  checks the status of the auto-backup feature
-  --pon_utilization     checks the utilization of all pon interfaces
+  --pon_utilization     checks the utilization of all PON interfaces
   --board_temperature   checks the temperature sensors on all boards
+  --nt_redundancy       checks the NT redundancy status of the given
+                        protection-group
   -s HOSTNAME           specify hostname
   -c COMMUNITY          specify SNMPv2 community
   -v                    turn on debug output
   -W WARNING            specify a warning threshold
   -C CRITICAL           specify a critical threshold
+  -g GROUPID            specify a protection-group ID (1-5)
 ```
 
 ### OMD command and service definition
@@ -120,6 +130,10 @@ define command {
 define command {
   command_name                   check_isam_pon_utilization
   command_line                   python3 $USER5$/check_isam.py --pon_utilization -s $HOSTADDRESS$ -c $ARG1$ -W $ARG2$ -C $ARG3$
+}
+define command {
+  command_name                   check_isam_nt_redundancy
+  command_line                   python3 $USER5$/check_isam.py --nt_redundancy -s $HOSTADDRESS$ -c $ARG1$ -g $ARG2$
 }
 ```
 
@@ -155,6 +169,12 @@ define service {
   use                            service-template-interval-5min
   check_command                  check_isam_pon_utilization!MySnmpComm!80!85
 }
+define service {
+  service_description            ISAM NT-Redundancy Status
+  host_name                      hostname_isam
+  use                            service-template-interval-5min-iol-one-notification
+  check_command                  check_isam_nt_redundancy!MySnmpComm!ProtectionGroupId
+}
 ```
 
 ### Some sample Outputs
@@ -181,6 +201,9 @@ define service {
 
 ![configbackup_warning](images/configbackup_warning.jpg)
 
+![nt_redundancy_ok](images/nt_redundancy_ok.jpg)
+
+![nt_redundancy_critical](images/nt_redundancy_critical.jpg)
 
 ### License
 
