@@ -14,6 +14,9 @@
 # check_isam_board_temperature
 #  - added range to warning/critical perf-data
 ###
+# Version 1.3 - Alex Lindner/06.10.2023
+# check_isam_nt_redundancy
+###
 # Nagios Exit-Codes:
 # 0 = OK
 # 1 = WARNING
@@ -315,6 +318,56 @@ def check_isam_board_temperature(hostname,community,slot_mapping,verbose):
         sys.exit(3)
 
 
+def check_isam_nt_redundancy(hostname,community,groupId,verbose):
+#   checks the redundancy status of NT boards
+
+    oid_admin_state = "1.3.6.1.4.1.637.61.1.23.5.2.1.8." + str(groupId)
+    oid_group_row_state = "1.3.6.1.4.1.637.61.1.23.5.2.1.11." + str(groupId)
+    oid_standby_state_nta = "1.3.6.1.4.1.637.61.1.23.5.3.1.3.4353"
+    oid_standby_state_ntb = "1.3.6.1.4.1.637.61.1.23.5.3.1.3.4354"
+    oid_last_switch_reason = "1.3.6.1.4.1.637.61.1.23.5.2.1.5." + str(groupId)
+    dict_admin_state = {1:"unlock",2:"lock"}
+    dict_group_row_state = {1:"active", 2:"not in service", 3:"not ready", 4:"create and go", 5:"create and wait", 6:"destroy"}
+    dict_standby_state = {0:"not-supported",1:"providing-service",2:"hot-standby",3:"cold-standby",4:"idle"}
+    dict_last_switch_reason = {1:"no switchover",2:"forced active",3:"board not present",4:"extender chain failure",5:"link failure",6:"watchdog timeout",7:"filesystem corrupt",8:"configuration mismatch",9:"board unplanned",10:"board locked",11:"shelf defense",12:"revertive switchover",13:"lanx failure",14:"lanx hw-failure",15:"lanx sdk failure",16:"dpoe app failure",17:"dpoe unreachable",18:"forced switchover"}
+
+    snmp_admin_state = snmp_get(oid_admin_state,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_group_row_state = snmp_get(oid_group_row_state,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_standby_state_nta = snmp_get(oid_standby_state_nta,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_standby_state_ntb = snmp_get(oid_standby_state_ntb,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_last_switch_reason = snmp_get(oid_last_switch_reason,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+
+    if snmp_admin_state and snmp_group_row_state and snmp_standby_state_nta and snmp_standby_state_ntb and snmp_last_switch_reason:
+        if verbose:
+            print("\nSNMP - admin state: %s" % snmp_admin_state)
+            print("\nSNMP - group row state: %s" % snmp_group_row_state)
+            print("\nSNMP - standby state nt-a: %s" % snmp_standby_state_nta)
+            print("\nSNMP - standby state nt-b: %s" % snmp_standby_state_ntb)
+            print("\nSNMP - last switchover reason: %s" % snmp_last_switch_reason)
+
+        if int(snmp_group_row_state.value) == 1:
+#       protection-group is in-service
+            if int(snmp_admin_state.value) == 1 and int(snmp_group_row_state.value) == 1 and int(snmp_standby_state_nta.value) == 1 and int(snmp_standby_state_ntb.value) == 2:
+                print("ISAM NT-Redundancy is OK\nProtection Group %i\nAdmin Status: %s\nRow Status: %s\nNT-A Status: %s\nNT-B Status: %s\nLast Switchover Reason: %s" % (groupId,dict_admin_state[int(snmp_admin_state.value)],dict_group_row_state[int(snmp_group_row_state.value)],dict_standby_state[int(snmp_standby_state_nta.value)],dict_standby_state[int(snmp_standby_state_ntb.value)],dict_last_switch_reason[int(snmp_last_switch_reason.value)]))
+                print("| redundancy_status=0;1;2;0;3")
+                sys.exit(0)
+
+            else:
+                print("ISAM NT-Redundancy is CRITICAL\nProtection Group %i\nAdmin Status: %s\nRow Status: %s\nNT-A Status: %s\nNT-B Status: %s\nLast Switchover Reason: %s" % (groupId,dict_admin_state[int(snmp_admin_state.value)],dict_group_row_state[int(snmp_group_row_state.value)],dict_standby_state[int(snmp_standby_state_nta.value)],dict_standby_state[int(snmp_standby_state_ntb.value)],dict_last_switch_reason[int(snmp_last_switch_reason.value)]))
+                print("| redundancy_status=2;1;2;0;3")
+                sys.exit(2)
+
+        else:
+#       protection-group is not in service
+            print("ISAM NT-Redundancy is WARNING\nProtection Group %i\nAdmin Status: %s\nRow Status: %s\nNT-A Status: %s\nNT-B Status: %s\nLast Switchover Reason: %s" % (groupId,dict_admin_state[int(snmp_admin_state.value)],dict_group_row_state[int(snmp_group_row_state.value)],dict_standby_state[int(snmp_standby_state_nta.value)],dict_standby_state[int(snmp_standby_state_ntb.value)],dict_last_switch_reason[int(snmp_last_switch_reason.value)]))
+            print("| redundancy_status=1;1;2;0;3")
+            sys.exit(1)
+
+    else:
+        print("UNKNOWN - An SNMP error occured")
+        sys.exit(3)
+
+
 def main():
 
     slot_mapping = {4352:"acu:1/1",4353:"nt-a",4354:"nt-b",4355:"lt:1/1/1",4356:"lt:1/1/2",4357:"lt:1/1/3",4358:"lt:1/1/4",4359:"lt:1/1/5",4360:"lt:1/1/6",4361:"lt:1/1/7",4362:"lt:1/1/8",4417:"vlt:1/1/63",4418:"vlt:1/1/64"}
@@ -327,10 +380,11 @@ def main():
             "\n %prog --auto_backup_status -s <host> -c <community> -v [verbose]" \
             "\n %prog --pon_utilization    -s <host> -c <community> -W <warning (1-99)> -C <critical (2-100)> -v [verbose]" \
             "\n %prog --board_temperature  -s <host> -c <community> -v [verbose]" \
+            "\n %prog --nt_redundancy      -s <host> -c <community> -g <groupId (1-5)> -v [verbose]" \
 
 
 #   create parser
-    parser = OptionParser(usage=usage,version="%prog 1.2")
+    parser = OptionParser(usage=usage,version="%prog 1.3")
 
 #   add options to parser
     parser.add_option("--board_availability",
@@ -351,12 +405,17 @@ def main():
     parser.add_option("--pon_utilization",
                       action="store_true",
                       dest="pon_utilization",
-                      help="checks the utilization of all pon interfaces")
+                      help="checks the utilization of all PON interfaces")
 
     parser.add_option("--board_temperature",
                       action="store_true",
                       dest="board_temperature",
                       help="checks the temperature sensors on all boards")
+
+    parser.add_option("--nt_redundancy",
+                      action="store_true",
+                      dest="nt_redundancy",
+                      help="checks the NT redundancy status of the given protection-group")
 
 #   add general parameters
     parser.add_option("-s",
@@ -380,6 +439,10 @@ def main():
     parser.add_option("-C",
                       dest="critical",
                       help="specify a critical threshold")
+
+    parser.add_option("-g",
+                      dest="groupId",
+                      help="specify a protection-group ID (1-5)")
 
     try:
 
@@ -438,6 +501,21 @@ def main():
                 community = options.community
                 verbose = options.verbose
                 check_isam_board_temperature(hostname,community,slot_mapping,verbose)
+            else:
+                print("%s" % msg_invalid_args)
+                sys.exit(3)
+
+        if options.nt_redundancy:
+            if options.hostname and options.community and options.groupId:
+                hostname = options.hostname
+                community = options.community
+                verbose = options.verbose
+                groupId = int(options.groupId)
+                if 1 <= groupId <= 5:
+                    check_isam_nt_redundancy(hostname,community,groupId,verbose)
+                else:
+                    print("%s" % msg_thresholds)
+                    sys.exit(3)
             else:
                 print("%s" % msg_invalid_args)
                 sys.exit(3)
