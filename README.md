@@ -225,7 +225,7 @@ define service {
 
 ![power_supply_ok](images/power_supply_ok.png)
 
-![power_supply_critical](images/power_supply_ok.png)
+![power_supply_critical](images/power_supply_critical.png)
 
 
 ### License
