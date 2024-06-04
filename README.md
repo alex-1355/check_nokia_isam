@@ -184,13 +184,13 @@ define service {
 define service {
   service_description            ISAM NT-Redundancy Status
   host_name                      hostname_isam
-  use                            service-template-interval-5min-iol-one-notification
+  use                            service-template-interval-5min
   check_command                  check_isam_nt_redundancy!MySnmpComm!ProtectionGroupId
 }
 define service {
   service_description            ISAM Power Supply
   host_name                      hostname_isam
-  use                            service-template-interval-5min-iol-one-notification
+  use                            service-template-interval-5min
   check_command                  check_isam_power_supply!MySnmpComm
 }
 ```
