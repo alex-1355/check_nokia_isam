@@ -1,22 +1,5 @@
 #!/usr/bin/env python
 ###
-# Version 1.0 - Alex Lindner/01.02.2023
-# add OptionParser
-# check_isam_board_availability
-# check_isam_board_operational_status
-###
-# Version 1.1 - Alex Lindner/02.02.2023
-# check_isam_auto_backup_status
-# check_isam_pon_utilization
-# check_isam_board_temperature
-###
-# Version 1.2 - Alex Lindner/07.02.2023
-# check_isam_board_temperature
-#  - added range to warning/critical perf-data
-###
-# Version 1.3 - Alex Lindner/06.10.2023
-# check_isam_nt_redundancy
-###
 # Nagios Exit-Codes:
 # 0 = OK
 # 1 = WARNING
@@ -368,6 +351,95 @@ def check_isam_nt_redundancy(hostname,community,groupId,verbose):
         sys.exit(3)
 
 
+def check_isam_power_supply(hostname,community,verbose):
+#   checks the status of the power supplies (supported OSWP >= 6.6)
+
+    oid_eqpt_ps_vin = "1.3.6.1.4.1.637.61.1.23.19.1.5"
+    oid_eqpt_ps_iin = "1.3.6.1.4.1.637.61.1.23.19.1.6"
+    dict_eqpt_ps_name = {0:"BAT-A",1:"BAT-B"}
+    oid_eqpt_ps_fault_vin = "1.3.6.1.4.1.637.61.1.23.19.1.10"
+    dict_eqpt_ps_fault_vin = {0:"no-error",1:"input-overvoltage-fault",2:"input-overvoltage-warning",3:"input-undervoltage-warning",4:"input-undervoltage-fault",5:"input-ac-nok-fault",6:"input-ac-nok-warning",7:"unit-off-for-insufficient-input-voltage"}
+    oid_eqpt_ps_fault_iin = "1.3.6.1.4.1.637.61.1.23.19.1.12"
+    dict_eqpt_ps_fault_iin = {0:"no-error",1:"input-overcurrent-fault",2:"input-overcurrent-warning",3:"input-overpower-warning"}
+    oid_eqpt_ps_fault_temp = "1.3.6.1.4.1.637.61.1.23.19.1.14"
+    dict_eqpt_ps_fault_temp = {0:"no-error",1:"overtemperature-fault",2:"overtemperature-warning",3:"undertemperature-warning",4:"undertemperature-fault"}
+    oid_eqpt_ps_fault_cml = "1.3.6.1.4.1.637.61.1.23.19.1.15"
+    dict_eqpt_ps_fault_cml = {0:"no-error",1:"invalid-or-unsupported-command-received",2:"invalid-or-unsupported-data-received",3:"packet-error-check-failed",4:"memory-fault-detected",5:"processor-fault-detected",6:"other-communication-fault",7:"other-memory-or-logic-fault"}
+    oid_eqpt_ps_present = "1.3.6.1.4.1.637.61.1.23.19.1.16"
+    dict_eqpt_ps_present = {0:"yes",1:"no"}
+    oid_eqpt_ps_fault_detected = "1.3.6.1.4.1.637.61.1.23.19.1.17"
+    dict_eqpt_ps_fault_detected = {0:"no",1:"yes"}
+    code_critical = [0,0]
+
+    snmp_eqpt_ps_vin = snmp_walk(oid_eqpt_ps_vin,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_eqpt_ps_iin = snmp_walk(oid_eqpt_ps_iin,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_eqpt_ps_fault_detected = snmp_walk(oid_eqpt_ps_fault_detected,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_eqpt_ps_present = snmp_walk(oid_eqpt_ps_present,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_eqpt_ps_fault_vin = snmp_walk(oid_eqpt_ps_fault_vin,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_eqpt_ps_fault_iin = snmp_walk(oid_eqpt_ps_fault_iin,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_eqpt_ps_fault_temp = snmp_walk(oid_eqpt_ps_fault_temp,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+    snmp_eqpt_ps_fault_cml = snmp_walk(oid_eqpt_ps_fault_cml,hostname=hostname,community=community,version=2,timeout=10,retries=0)
+
+    if snmp_eqpt_ps_vin and snmp_eqpt_ps_fault_detected and snmp_eqpt_ps_present and snmp_eqpt_ps_fault_vin and snmp_eqpt_ps_fault_iin and snmp_eqpt_ps_fault_temp and snmp_eqpt_ps_fault_cml:
+
+#      check if BAT-A or BAT-B reports 0 volts or other faults are present
+        i = 0
+        while(i < len(snmp_eqpt_ps_vin)):
+            if int(snmp_eqpt_ps_vin[i].value) == 0 or snmp_eqpt_ps_fault_detected[i].value == 1:
+                code_critical[i] = 2
+
+                if verbose:
+                    print("\nSNMP - eqpt_ps_vin:")
+                    for item in snmp_eqpt_ps_vin: print("%s" % item)
+                    print("\nSNMP - eqpt_ps_fault_detected: yes")
+                    for item in snmp_eqpt_ps_fault_detected: print("%s" % item)
+                    print("\nSNMP - eqpt_ps_fault_vin:")
+                    for item in snmp_eqpt_ps_fault_vin: print("%s" % item)
+                    print("\nSNMP - eqpt_ps_fault_iin:")
+                    for item in snmp_eqpt_ps_fault_iin: print("%s" % item)
+                    print("\nSNMP - eqpt_ps_fault_temp:")
+                    for item in snmp_eqpt_ps_fault_temp: print("%s" % item)
+                    print("\nSNMP - eqpt_ps_fault_cml:")
+                    for item in snmp_eqpt_ps_fault_cml: print("%s" % item)
+            i += 1
+
+#       print plugin-output and generate performance-data
+        if any(code_critical):
+            print("ISAM Power Supply is CRITICAL\n")
+
+        else:
+            print("ISAM Power Supply is OK\n")
+
+#       print plugin-output
+        i = 0
+        while(i < len(snmp_eqpt_ps_vin)):
+            print("%s:\nVoltage:%.2fV\nCurrent:%.2fA" % (dict_eqpt_ps_name[i],float(snmp_eqpt_ps_vin[i].value)/1000,float(snmp_eqpt_ps_iin[i].value)/1000))
+            print("PS present: %s" % dict_eqpt_ps_present[int(snmp_eqpt_ps_present[i].value)])
+            print("PS Fault detected: %s\n" % dict_eqpt_ps_fault_detected[int(snmp_eqpt_ps_fault_detected[i].value)])
+            print("PS Fault Vin: %s" % dict_eqpt_ps_fault_vin[int(snmp_eqpt_ps_fault_vin[i].value)])
+            print("PS Fault Iin: %s" % dict_eqpt_ps_fault_iin[int(snmp_eqpt_ps_fault_iin[i].value)])
+            print("PS Fault Temp: %s" % dict_eqpt_ps_fault_temp[int(snmp_eqpt_ps_fault_temp[i].value)])
+            print("PS Fault CML: %s\n" % dict_eqpt_ps_fault_cml[int(snmp_eqpt_ps_fault_cml[i].value)])
+            i += 1
+
+        print(" | ")
+
+#       generate performance data
+        i = 0
+        while(i < len(snmp_eqpt_ps_vin)):
+            print("%s_state=%i;1;2;0;3" % (dict_eqpt_ps_name[i].lower(),code_critical[i]))
+            print("%s_voltage=%.2fvolts;;;0;60" % (dict_eqpt_ps_name[i].lower(),float(snmp_eqpt_ps_vin[i].value)/1000))
+            print("%s_current=%.2fampere;;;0;10" % (dict_eqpt_ps_name[i].lower(),float(snmp_eqpt_ps_iin[i].value)/1000))
+            i += 1
+
+        if any(code_critical): sys.exit(2)
+        else: sys.exit(0)
+
+    else:
+        print("UNKNOWN - An SNMP error occured")
+        sys.exit(3)
+
+
 def main():
 
     slot_mapping = {4352:"acu:1/1",4353:"nt-a",4354:"nt-b",4355:"lt:1/1/1",4356:"lt:1/1/2",4357:"lt:1/1/3",4358:"lt:1/1/4",4359:"lt:1/1/5",4360:"lt:1/1/6",4361:"lt:1/1/7",4362:"lt:1/1/8",4417:"vlt:1/1/63",4418:"vlt:1/1/64"}
@@ -381,10 +453,11 @@ def main():
             "\n %prog --pon_utilization    -s <host> -c <community> -W <warning (1-99)> -C <critical (2-100)> -v [verbose]" \
             "\n %prog --board_temperature  -s <host> -c <community> -v [verbose]" \
             "\n %prog --nt_redundancy      -s <host> -c <community> -g <groupId (1-5)> -v [verbose]" \
+            "\n %prog --power_supply       -s <host> -c <community> -v [verbose]" \
 
 
 #   create parser
-    parser = OptionParser(usage=usage,version="%prog 1.3")
+    parser = OptionParser(usage=usage,version="%prog 1.4")
 
 #   add options to parser
     parser.add_option("--board_availability",
@@ -416,6 +489,11 @@ def main():
                       action="store_true",
                       dest="nt_redundancy",
                       help="checks the NT redundancy status of the given protection-group")
+
+    parser.add_option("--power_supply",
+                      action="store_true",
+                      dest="power_supply",
+                      help="checks the power supply status of the shelf")
 
 #   add general parameters
     parser.add_option("-s",
@@ -516,6 +594,16 @@ def main():
                 else:
                     print("%s" % msg_thresholds)
                     sys.exit(3)
+            else:
+                print("%s" % msg_invalid_args)
+                sys.exit(3)
+
+        if options.power_supply:
+            if options.hostname and options.community:
+                hostname = options.hostname
+                community = options.community
+                verbose = options.verbose
+                check_isam_power_supply(hostname,community,verbose)
             else:
                 print("%s" % msg_invalid_args)
                 sys.exit(3)
