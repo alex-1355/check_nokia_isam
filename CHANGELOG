@@ -1,0 +1,38 @@
+## 1.4 (04.06.2024)
+
+### Features (1 change)
+
+- [check_isam_power_supply] by @alin
+
+
+## 1.3 (06.10.2023)
+
+### Features (1 change)
+
+- [check_isam_nt_redundancy] by @alin
+
+
+## 1.2 (07.02.2023)
+
+### Changes
+
+- [check_isam_board_temperature] by @alin
+  - added range to warning/critical perf-data
+
+
+## 1.1 (02.02.2023)
+
+### Features (3 changes)
+
+- [check_isam_auto_backup_status] by @alin
+- [check_isam_pon_utilization] by @alin
+- [check_isam_board_temperature] by @alin
+
+
+## 1.0 (01.02.2023)
+
+### Features (3 changes)
+
+- [add OptionParser] by @alin
+- [check_isam_board_availability] by @alin
+- [check_isam_board_operational_status] by @alin
