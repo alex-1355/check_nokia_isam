@@ -1,5 +1,4 @@
 
-
 # check_nokia_isam
 
 A Nagios-Plugin to check multiple services on Nokia ISAM devices.
@@ -45,7 +44,15 @@ This plugin can be used to check the following services on Nokia ISAMs:
 
   NT-Redundancy Status of a Protection Group (CLI: show equipment protection-group, show equipment protection-element)
   
-  The admin-state, group-state, standby-state of NT-A and NT-B and the last reason for switchover are checked.
+  The admin-state, group-state, standby-state of NT-A and NT-B and the last switchover reason are checked.
+
+
+- power_supply
+
+  The Power Supply status of the shelf (acu:1/1 -> NGFC) (CLI: show equipment power-supply)
+
+  If BAT-A or BAT-B reports 0 volts Vin or the flag fault-detected (temperature, over/under-voltage, over-current or over-power) is set an alarm is triggered.
+
 
 ### Dependencies
 
@@ -63,7 +70,7 @@ This plugin can be used to check the following services on Nokia ISAMs:
 
 
 - OMD 5.0 (Ubuntu 22) with Python 3.10
-- Nokia ISAM 7360 FX-8 (OSWP 6.2) with FANT-F
+- Nokia ISAM 7360 FX-8 (OSWP 6.2, 6.6) with FANT-F
 
 
 
@@ -85,6 +92,7 @@ Usage:
  check_isam.py --pon_utilization    -s <host> -c <community> -W <warning (1-99)> -C <critical (2-100)> -v [verbose]
  check_isam.py --board_temperature  -s <host> -c <community> -v [verbose]
  check_isam.py --nt_redundancy      -s <host> -c <community> -g <groupId (1-5)> -v [verbose]
+ check_isam-py --power_supply       -s <host> -c <community>
 
 Options:
   --version             show program's version number and exit
@@ -135,6 +143,10 @@ define command {
   command_name                   check_isam_nt_redundancy
   command_line                   python3 $USER5$/check_isam.py --nt_redundancy -s $HOSTADDRESS$ -c $ARG1$ -g $ARG2$
 }
+define command {
+  command_name                   check_isam_power_supply
+  command_line                   python3 $USER5$/check_isam.py --power_supply -s $HOSTADDRESS$ -c $ARG1$
+}
 ```
 
 services
@@ -175,6 +187,12 @@ define service {
   use                            service-template-interval-5min-iol-one-notification
   check_command                  check_isam_nt_redundancy!MySnmpComm!ProtectionGroupId
 }
+define service {
+  service_description            ISAM Power Supply
+  host_name                      hostname_isam
+  use                            service-template-interval-5min-iol-one-notification
+  check_command                  check_isam_power_supply!MySnmpComm
+}
 ```
 
 ### Some sample Outputs
@@ -201,9 +219,14 @@ define service {
 
 ![configbackup_warning](images/configbackup_warning.jpg)
 
-![nt_redundancy_ok](images/nt_redundancy_ok.jpg)
+![nt_redundancy_ok](images/nt_redundancy_ok.png)
 
-![nt_redundancy_critical](images/nt_redundancy_critical.jpg)
+![nt_redundancy_critical](images/nt_redundancy_critical.png)
+
+![power_supply_ok](images/power_supply_ok.png)
+
+![power_supply_critical](images/power_supply_ok.png)
+
 
 ### License
 
