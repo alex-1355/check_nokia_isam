@@ -1,3 +1,13 @@
+## 1.5 (26.03.2025)
+
+### Features (1 change)
+
+- [check_isam_pon_utilization] by @alin
+  - added support for 8-port LTs
+  - fix perfdata generation
+  - removed hardcoded 16-port PON perfdata generation
+
+
 ## 1.4 (04.06.2024)
 
 ### Features (1 change)
