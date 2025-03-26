@@ -181,7 +181,7 @@ def check_isam_auto_backup_status(hostname,community,verbose):
         sys.exit(3)
 
 
-def check_isam_pon_utilization(hostname,community,warning,critical,verbose):
+def check_isam_pon_utilization(hostname,community,warning,critical,pon_mapping,slot_mapping,verbose):
 #   checks the utilization of all pon interfaces
 
     oid_rx = "1.3.6.1.4.1.637.61.1.35.21.57.1.7"
@@ -190,6 +190,8 @@ def check_isam_pon_utilization(hostname,community,warning,critical,verbose):
     snmp_tx = ""
     code_warning = 0
     code_critical = 0
+    snmp_actual_type = ""
+    perfdata = []
 
     snmp_rx = snmp_walk(oid_rx,hostname=hostname,community=community,version=2,timeout=10,retries=0)
     snmp_tx = snmp_walk(oid_tx,hostname=hostname,community=community,version=2,timeout=10,retries=0)
@@ -218,19 +220,47 @@ def check_isam_pon_utilization(hostname,community,warning,critical,verbose):
         elif code_warning: print("%i/%i PON interfaces are reporting WARNING" % (code_warning,len(snmp_rx)))
         else: print("%i/%i PON interfaces are reporting OK" % (len(snmp_rx),len(snmp_rx)))
 
-#       generate performance-data (hardcoded to 16-PON LTs)
+        snmp_actual_type = get_board_actual_type(hostname,community)
+
+        if snmp_actual_type:
+            if verbose:
+                print("\nSNMP - board actual type:")
+                for item in snmp_actual_type: print("%s" % item)
+
+        index = 0
+        while(index < len(snmp_actual_type)):
+            if snmp_actual_type[index].value in pon_mapping:
+                if verbose:
+                    print("INDEX: %i - BOARD: %s" % (index-2,snmp_actual_type[index]))
+                perfdata.append(pon_mapping[snmp_actual_type[index].value])
+            else:
+                perfdata.append(0)
+            index += 1
+
+        perfdata = perfdata[2:]
+        perfdata = [int(item) for item in perfdata]
+
+        if verbose:
+            print("\nPERFDATA-LIST:")
+            print("%s" % perfdata)
+
+#       generate performance-data
         print("|")
-        i = 0
-        i_lt = 1
-        i_pon = 1
-        while i < len(snmp_rx):
-            print("pon_1/1/%i/%i_rx=%3.2f%%;%i;%i;0;100" % (i_lt,i_pon,snmp_rx[i],warning,critical))
-            print("pon_1/1/%i/%i_tx=%3.2f%%;%i;%i;0;100" % (i_lt,i_pon,snmp_tx[i],warning,critical))
-            if i_pon == 16:
-                i_pon = 0
-                i_lt += 1
-            i += 1
-            i_pon += 1
+
+        index = 0
+        while(index < len(perfdata)):
+            if perfdata[index] > 0:
+                if verbose:
+                    print("\nPerfdata for slot %i with %i ports is being generated." % (index,perfdata[index]))
+                i = 0
+                i_lt = index
+                i_pon = 1
+                while i < perfdata[index]:
+                    print("pon_1/1/%i/%i_rx=%3.2f%%;%i;%i;0;100" % (i_lt,i_pon,snmp_rx[i],warning,critical))
+                    print("pon_1/1/%i/%i_tx=%3.2f%%;%i;%i;0;100" % (i_lt,i_pon,snmp_tx[i],warning,critical))
+                    i += 1
+                    i_pon += 1
+            index += 1
 
         if code_critical: sys.exit(2)
         elif code_warning: sys.exit(1)
@@ -443,6 +473,7 @@ def check_isam_power_supply(hostname,community,verbose):
 def main():
 
     slot_mapping = {4352:"acu:1/1",4353:"nt-a",4354:"nt-b",4355:"lt:1/1/1",4356:"lt:1/1/2",4357:"lt:1/1/3",4358:"lt:1/1/4",4359:"lt:1/1/5",4360:"lt:1/1/6",4361:"lt:1/1/7",4362:"lt:1/1/8",4417:"vlt:1/1/63",4418:"vlt:1/1/64"}
+    pon_mapping = {"FGLT-A":"16", "FGLT-B":"16", "FGLT-D":"16", "FWLT-B":"8", "FWLT-C":"16"}
     msg_invalid_args = "Please check your arguments!"
     msg_thresholds = "Thresholds are not acceptable!"
     help_message = "\n Collection of Nokia ISAM Monitoring Plugins\n" \
@@ -457,7 +488,7 @@ def main():
 
 
 #   create parser
-    parser = OptionParser(usage=usage,version="%prog 1.4")
+    parser = OptionParser(usage=usage,version="%prog 1.5")
 
 #   add options to parser
     parser.add_option("--board_availability",
@@ -565,7 +596,7 @@ def main():
                 warning = int(options.warning)
                 critical = int(options.critical)
                 if 1 <= warning <= 99 and 2 <= critical <= 100 and warning < critical:
-                    check_isam_pon_utilization(hostname,community,warning,critical,verbose)
+                    check_isam_pon_utilization(hostname,community,warning,critical,pon_mapping,slot_mapping,verbose)
                 else:
                     print("%s" % msg_thresholds)
                     sys.exit(3)
